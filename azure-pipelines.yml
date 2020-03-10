@@ -67,14 +67,18 @@ stages:
         deploy:
 
           steps:
-          - task: AzureResourceGroupDeployment@2
-            displayName: 'Create or update Azure Resources'
+          - task: AzureResourceManagerTemplateDeployment@3
             inputs:
-              azureSubscription: '$(azureSubscription)'
-              resourceGroupName: '$(resourceGroupName)'
-              location: '$(resourceLocationName)'
+              deploymentScope: 'Resource Group'
+              azureResourceManagerConnection: 'SuperDuperSubscription'
+              subscriptionId: 'd8edfd3f-489d-4db6-b048-9f6647b7b8fe'
+              action: 'Create Or Update Resource Group'
+              resourceGroupName: 'Target'
+              location: 'West Europe'
+              templateLocation: 'Linked artifact'
               csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
               csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
+              deploymentMode: 'Complete'          
 
 
 - stage: Deploy
@@ -101,3 +105,4 @@ stages:
               appType: functionApp
               appName: $(functionAppName)
               package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
+
