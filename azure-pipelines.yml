@@ -100,7 +100,7 @@ stages:
           - task: AzureFunctionApp@1
             displayName: 'Azure functions app deploy'
             inputs:
-              azureSubscription: 'd8edfd3f-489d-4db6-b048-9f6647b7b8fe'
+              azureSubscription: 'SuperDuperSubscription'
               appType: functionApp
               appName: $(functionAppName)
               package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
