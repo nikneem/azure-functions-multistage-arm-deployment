@@ -69,8 +69,8 @@ stages:
           - task: AzureResourceManagerTemplateDeployment@3
             inputs:
               deploymentScope: 'Resource Group'
-              azureResourceManagerConnection: 'SuperDuperSubscription'
-              subscriptionId: 'd8edfd3f-489d-4db6-b048-9f6647b7b8fe'
+              azureResourceManagerConnection: $(ServiceConnectionName)
+              subscriptionId: $(AzureSubscriptionId)
               action: 'Create Or Update Resource Group'
               resourceGroupName: 'Target'
               location: 'West Europe'
@@ -100,7 +100,7 @@ stages:
           - task: AzureFunctionApp@1
             displayName: 'Azure functions app deploy'
             inputs:
-              azureSubscription: 'SuperDuperSubscription'
+              azureSubscription: $(ServiceConnectionName)
               appType: functionApp
               appName: $(functionAppName)
               package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
