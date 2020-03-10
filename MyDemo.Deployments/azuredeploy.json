@@ -1,0 +1,398 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "product_prefix": {
+      "defaultValue": "hello",
+      "type": "String"
+    },
+    "environment": {
+      "defaultValue": "prod",
+      "type": "String",
+      "allowedValues": [
+        "prod",
+        "acc",
+        "test"
+      ]
+    },
+    "storage_account_name": {
+      "defaultValue": "storage",
+      "type": "String"
+    },
+    "functions_app_name": {
+      "defaultValue": "functions",
+      "type": "String"
+    },
+    "app_service_plan_name": {
+      "defaultValue": "serviceplan",
+      "type": "String"
+    },
+    "application_insights_name": {
+      "defaultValue": "insights",
+      "type": "String"
+    },
+    "keyvault_name": {
+      "defaultValue": "keyvault",
+      "type": "String"
+    },
+    "tenantId": {
+      "type": "string",
+      "defaultValue": "[subscription().tenantId]",
+      "metadata": {
+        "description":
+          "Specifies the Azure Active Directory tenant ID that should be used for authenticating requests to the key vault. Get it by using Get-AzSubscription cmdlet."
+      }
+    }
+  },
+  "variables": {
+    "keyvault_name": "[concat(parameters('environment'), parameters('product_prefix'), parameters('keyvault_name'))]",
+    "storage_account_name":
+      "[concat(parameters('environment'), parameters('product_prefix'), parameters('storage_account_name'))]",
+    "app_service_plan_name":
+      "[concat(parameters('environment'), parameters('product_prefix'), parameters('app_service_plan_name'))]",
+    "functions_app_name":
+      "[concat(parameters('environment'), parameters('product_prefix'), parameters('functions_app_name'))]",
+    "application_insights_name":
+      "[concat(parameters('environment'), parameters('product_prefix'), parameters('functions_app_name'))]",
+    "secret_storage_connection": "storage-connection-string",
+    "secret_instrumentation_key": "appinsight-instrumentation-key",
+    "storage_share_name": "share",
+    "storage_account_id": "[resourceId('Microsoft.Storage/storageAccounts', variables('storage_account_name'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2019-06-01",
+      "name": "[variables('storage_account_name')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "Storage",
+      "properties": {
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "supportsHttpsTrafficOnly": true,
+        "encryption": {
+          "services": {
+            "file": {
+              "keyType": "Account",
+              "enabled": true
+            },
+            "blob": {
+              "keyType": "Account",
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        }
+      },
+      "resources": [
+        {
+          "type": "blobServices",
+          "apiVersion": "2019-06-01",
+          "name": "/default",
+          "dependsOn": [
+            "[resourceId('Microsoft.Storage/storageAccounts', variables('storage_account_name'))]"
+          ],
+          "sku": {
+            "name": "Standard_LRS"
+          },
+          "properties": {
+            "cors": {
+              "corsRules": []
+            },
+            "deleteRetentionPolicy": {
+              "enabled": false
+            }
+          }
+        },
+        {
+          "type": "fileServices",
+          "apiVersion": "2019-06-01",
+          "name": "/default",
+          "dependsOn": [
+            "[resourceId('Microsoft.Storage/storageAccounts', variables('storage_account_name'))]"
+          ],
+          "sku": {
+            "name": "Standard_LRS"
+          },
+          "properties": {
+            "cors": {
+              "corsRules": []
+            }
+          },
+          "resources": [
+            {
+              "type": "shares",
+              "apiVersion": "2019-06-01",
+              "name": "[variables('storage_share_name')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices', variables('storage_account_name'), 'default')]"
+              ],
+              "properties": {
+                "shareQuota": 5120
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "microsoft.insights/components",
+      "apiVersion": "2015-05-01",
+      "name": "[variables('application_insights_name')]",
+      "location": "[resourceGroup().location]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web",
+        "Flow_Type": "Redfield",
+        "Request_Source": "AppServiceEnablementCreate"
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2018-02-01",
+      "name": "[variables('app_service_plan_name')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic",
+        "size": "Y1",
+        "family": "Y",
+        "capacity": 0
+      },
+      "kind": "functionapp",
+      "properties": {
+        "perSiteScaling": false,
+        "maximumElasticWorkerCount": 1,
+        "isSpot": false,
+        "reserved": false,
+        "isXenon": false,
+        "hyperV": false,
+        "targetWorkerCount": 0,
+        "targetWorkerSizeId": 0
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2018-11-01",
+      "name": "[variables('functions_app_name')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('app_service_plan_name'))]",
+        "[resourceId('microsoft.insights/components', variables('application_insights_name'))]"
+      ],
+      "kind": "functionapp",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "enabled": true,
+        "hostNameSslStates": [
+          {
+            "name": "[concat(variables('functions_app_name'), '.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Standard"
+          },
+          {
+            "name": "[concat(variables('functions_app_name'), '.scm.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Repository"
+          }
+        ],
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('app_service_plan_name'))]",
+        "reserved": false,
+        "isXenon": false,
+        "hyperV": false,
+        "scmSiteAlsoStopped": false,
+        "clientAffinityEnabled": true,
+        "clientCertEnabled": false,
+        "hostNamesDisabled": false,
+        "containerSize": 1536,
+        "dailyMemoryTimeQuota": 0,
+        "httpsOnly": false,
+        "redundancyMode": "None"
+      },
+      "resources": [
+        {
+          "name": "appsettings",
+          "type": "config",
+          "apiVersion": "2018-11-01",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', variables('functions_app_name'))]",
+            "[resourceId('Microsoft.KeyVault/vaults', variables('keyvault_name'))]",
+            "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('keyvault_name'), variables('secret_storage_connection'))]",
+            "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('keyvault_name'), variables('secret_instrumentation_key'))]"
+          ],
+          "properties": {
+            "AzureWebJobsStorage":
+              "[concat('@Microsoft.KeyVault(SecretUri=', reference(resourceId('Microsoft.KeyVault/vaults/secrets', variables('keyvault_name'), variables('secret_storage_connection'))).secretUriWithVersion, ')')]",
+            "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING":
+              "[concat('@Microsoft.KeyVault(SecretUri=', reference(resourceId('Microsoft.KeyVault/vaults/secrets', variables('keyvault_name'), variables('secret_storage_connection'))).secretUriWithVersion, ')')]",
+            "APPINSIGHTS_INSTRUMENTATIONKEY":
+              "[concat('@Microsoft.KeyVault(SecretUri=', reference(resourceId('Microsoft.KeyVault/vaults/secrets', variables('keyvault_name'), variables('secret_instrumentation_key'))).secretUriWithVersion, ')')]",
+            "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+            "FUNCTIONS_EXTENSION_VERSION": "~3",
+            "WEBSITE_CONTENTSHARE": "[variables('storage_share_name')]"
+          }
+        },
+        {
+          "type": "Microsoft.Web/sites/config",
+          "apiVersion": "2018-11-01",
+          "name": "[concat(variables('functions_app_name'), '/web')]",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', variables('functions_app_name'))]"
+          ],
+          "properties": {
+            "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+            "FUNCTIONS_EXTENSION_VERSION": "~3",
+            "WEBSITE_CONTENTSHARE": "[variables('storage_share_name')]",
+            "AzureWebJobsStorage":
+              "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storage_account_name'), ';AccountKey=', listKeys(variables('storage_account_id'), '2019-04-01').keys[0].value)]",
+            "APPINSIGHTS_INSTRUMENTATIONKEY": "banana",
+            "numberOfWorkers": 1,
+            "defaultDocuments": ["default.html", "index.html"],
+            "netFrameworkVersion": "v4.0",
+            "phpVersion": "5.6",
+            "requestTracingEnabled": false,
+            "remoteDebuggingEnabled": false,
+            "httpLoggingEnabled": false,
+            "logsDirectorySizeLimit": 35,
+            "detailedErrorLoggingEnabled": false,
+            "publishingUsername": "$myfunctionsusername",
+            "scmType": "None",
+            "use32BitWorkerProcess": true,
+            "webSocketsEnabled": false,
+            "alwaysOn": false,
+            "managedPipelineMode": "Integrated",
+            "virtualApplications": [
+              {
+                "virtualPath": "/",
+                "physicalPath": "site\\wwwroot",
+                "preloadEnabled": false
+              }
+            ],
+            "loadBalancing": "LeastRequests",
+            "experiments": {
+              "rampUpRules": []
+            },
+            "autoHealEnabled": false,
+            "cors": {
+              "allowedOrigins": [
+                "https://functions.azure.com",
+                "https://functions-staging.azure.com",
+                "https://functions-next.azure.com"
+              ],
+              "supportCredentials": true
+            },
+            "localMySqlEnabled": false,
+            "ipSecurityRestrictions": [
+              {
+                "ipAddress": "Any",
+                "action": "Allow",
+                "priority": 1,
+                "name": "Allow all",
+                "description": "Allow all access"
+              }
+            ],
+            "scmIpSecurityRestrictions": [
+              {
+                "ipAddress": "Any",
+                "action": "Allow",
+                "priority": 1,
+                "name": "Allow all",
+                "description": "Allow all access"
+              }
+            ],
+            "scmIpSecurityRestrictionsUseMain": false,
+            "http20Enabled": true,
+            "minTlsVersion": "1.2",
+            "ftpsState": "Disabled",
+            "reservedInstanceCount": 0
+          }
+        },
+        {
+          "type": "hostNameBindings",
+          "apiVersion": "2018-11-01",
+          "name": "[concat(variables('functions_app_name'), '.azurewebsites.net')]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', variables('functions_app_name'))]"
+          ],
+          "properties": {
+            "siteName": "dayfixfunctions",
+            "hostNameType": "Verified"
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "name": "[variables('keyvault_name')]",
+      "apiVersion": "2018-02-14",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "enabledForDeployment": "false",
+        "enabledForDiskEncryption": "false",
+        "enabledForTemplateDeployment": "true",
+        "tenantId": "[parameters('tenantId')]",
+        "accessPolicies": [
+          {
+            "tenantId":
+              "[reference(concat('Microsoft.Web/sites/',  variables('functions_app_name'), '/providers/Microsoft.ManagedIdentity/Identities/default'), '2015-08-31-PREVIEW').tenantId]",
+            "objectId":
+              "[reference(concat('Microsoft.Web/sites/',  variables('functions_app_name'), '/providers/Microsoft.ManagedIdentity/Identities/default'), '2015-08-31-PREVIEW').principalId]",
+            "permissions": {
+              "secrets": ["get"]
+            }
+          }
+        ],
+        "sku": {
+          "name": "Standard",
+          "family": "A"
+        },
+        "networkAcls": {
+          "defaultAction": "Allow",
+          "bypass": "AzureServices"
+        }
+      },
+      "resources": [
+        {
+          "type": "secrets",
+          "name": "[variables('secret_storage_connection')]",
+          "apiVersion": "2018-02-14",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[resourceId('Microsoft.KeyVault/vaults/', variables('keyvault_name'))]",
+            "[resourceId('Microsoft.Storage/storageAccounts', variables('storage_account_name'))]"
+          ],
+          "properties": {
+            "value":
+              "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storage_account_name'), ';AccountKey=', listKeys(variables('storage_account_id'), '2019-04-01').keys[0].value)]"
+          }
+        },
+        {
+          "type": "secrets",
+          "name": "[variables('secret_instrumentation_key')]",
+          "apiVersion": "2018-02-14",
+          "location": "[resourceGroup().location]",
+          "dependsOn": [
+            "[resourceId('Microsoft.KeyVault/vaults/', variables('keyvault_name'))]",
+            "[resourceId('microsoft.insights/components', variables('application_insights_name'))]"
+          ],
+          "properties": {
+            "value":
+              "[reference(resourceId('microsoft.insights/components/', variables('application_insights_name')), '2015-05-01').InstrumentationKey]"
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {}
+}

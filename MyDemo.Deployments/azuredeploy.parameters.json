@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "product_prefix": {
+      "value": "hello"
+    },
+    "environment": {
+      "value": "prod"
+    },
+    "storage_account_name": {
+      "value": "storage"
+    },
+    "functions_app_name": {
+      "value": "functions"
+    },
+    "app_service_plan_name": {
+      "value": "serviceplan"
+    },
+    "application_insights_name": {
+      "value": "insights"
+    },
+    "keyvault_name": {
+      "value": "keyvault"
+    }
+  }
+}

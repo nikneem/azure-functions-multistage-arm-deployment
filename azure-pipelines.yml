@@ -1,0 +1,103 @@
+trigger:
+- master
+
+variables:
+  azureSubscription: 'your-azure-subscription'
+  functionAppName: 'prodhellofunctions'
+  resourceLocationName: 'West Europe'
+  resourceGroupName: 'Target'
+  vmImageName: 'vs2017-win2016'
+  workingDirectory: '$(System.DefaultWorkingDirectory)/MyDemo.Functions'
+
+stages:
+- stage: Build
+  displayName: Build stage
+
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+
+    steps:
+    - task: CopyFiles@2
+      displayName: 'Publish ARM templates'
+      inputs:
+        SourceFolder: 'MyDemo.Deployments'
+        Contents: '**\*.json'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)\deployments'
+
+    - task: DotNetCoreCLI@2
+      displayName: Build
+      inputs:
+        command: 'build'
+        projects: |
+          $(workingDirectory)\*.csproj
+        arguments: --output $(System.DefaultWorkingDirectory)\publish_output --configuration Release
+
+    - task: ArchiveFiles@2
+      displayName: 'Archive files'
+      inputs:
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)\publish_output'
+        includeRootFolder: false
+        archiveType: zip
+        archiveFile: $(Build.ArtifactStagingDirectory)\$(Build.BuildId).zip
+        replaceExistingArchive: true
+
+    - publish: '$(Build.ArtifactStagingDirectory)\deployments'
+      artifact: deployments
+
+    - publish: '$(Build.ArtifactStagingDirectory)\$(Build.BuildId).zip'
+      artifact: drop
+
+- stage: ArmResources
+  displayName: Deploy ARM Templates
+  dependsOn: Build
+  condition: succeeded()
+
+  jobs:
+  - deployment: ArmResources
+    displayName: Deploy ARM Templates
+    environment: 'production'
+    pool:
+      vmImage: $(vmImageName)
+
+    strategy:
+      runOnce:
+        deploy:
+
+          steps:
+          - task: AzureResourceGroupDeployment@2
+            displayName: 'Create or update Azure Resources'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              resourceGroupName: '$(resourceGroupName)'
+              location: '$(resourceLocationName)'
+              csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
+              csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
+
+
+- stage: Deploy
+  displayName: Deploy stage
+  dependsOn: ArmResources
+  condition: succeeded()
+
+  jobs:
+  - deployment: Deploy
+    displayName: Deploy
+    environment: 'production'
+    pool:
+      vmImage: $(vmImageName)
+
+    strategy:
+      runOnce:
+        deploy:
+
+          steps:
+          - task: AzureFunctionApp@1
+            displayName: 'Azure functions app deploy'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              appType: functionApp
+              appName: $(functionAppName)
+              package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
