@@ -2,7 +2,6 @@ trigger:
 - master
 
 variables:
-  AzureSubscriptionId: $(AzureSubscriptionId)
   functionAppName: 'prodhellofunctions'
   resourceLocationName: 'West Europe'
   resourceGroupName: 'Target'
