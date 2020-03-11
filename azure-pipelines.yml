@@ -2,8 +2,8 @@ trigger:
 - master
 
 variables:
-  ServiceConnectionName: 'Visual Studio Enterprise – MPN(d8edfd3f-489d-4db6-b048-9f6647b7b8fe)'
-  AzureSubscriptionId: 'd8edfd3f-489d-4db6-b048-9f6647b7b8fe'
+  serviceConnectionName: $[variables.ServiceConnectionName]
+  azureSubscriptionId: $[variables.AzureSubscriptionId]
   functionAppName: 'prodhellofunctions'
   resourceLocationName: 'West Europe'
   resourceGroupName: 'Target'
@@ -71,8 +71,8 @@ stages:
           - task: AzureResourceManagerTemplateDeployment@3
             inputs:
               deploymentScope: 'Resource Group'
-              azureResourceManagerConnection: $(ServiceConnectionName)
-              subscriptionId: $(AzureSubscriptionId)
+              azureResourceManagerConnection: $(serviceConnectionName)
+              subscriptionId: $(azureSubscriptionId)
               action: 'Create Or Update Resource Group'
               resourceGroupName: 'Target'
               location: 'West Europe'
@@ -102,7 +102,7 @@ stages:
           - task: AzureFunctionApp@1
             displayName: 'Azure functions app deploy'
             inputs:
-              azureSubscription: $(ServiceConnectionName)
+              azureSubscription: $(serviceConnectionName)
               appType: functionApp
               appName: $(functionAppName)
               package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
