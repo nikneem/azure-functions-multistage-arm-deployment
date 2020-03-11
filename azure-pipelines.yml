@@ -2,13 +2,7 @@ trigger:
 - master
 
 variables:
-  serviceConnectionName: $ServiceConnectionName
-  azureSubscriptionId: $AzureSubscriptionId
-  functionAppName: 'prodhellofunctions'
-  resourceLocationName: 'West Europe'
-  resourceGroupName: 'Target'
-  vmImageName: 'vs2017-win2016'
-  workingDirectory: '$(System.DefaultWorkingDirectory)/MyDemo.Functions'
+  - group: Production
 
 stages:
 - stage: Build
