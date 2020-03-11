@@ -65,8 +65,8 @@ stages:
           - task: AzureResourceManagerTemplateDeployment@3
             inputs:
               deploymentScope: 'Resource Group'
-              azureResourceManagerConnection: $(serviceConnectionName)
-              subscriptionId: $(azureSubscriptionId)
+              azureResourceManagerConnection: $(ServiceConnectionName)
+              subscriptionId: $(AzureSubscriptionId)
               action: 'Create Or Update Resource Group'
               resourceGroupName: 'Target'
               location: 'West Europe'
@@ -96,7 +96,7 @@ stages:
           - task: AzureFunctionApp@1
             displayName: 'Azure functions app deploy'
             inputs:
-              azureSubscription: $(serviceConnectionName)
+              azureSubscription: $(ServiceConnectionName)
               appType: functionApp
               appName: $(functionAppName)
               package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
