@@ -2,8 +2,8 @@ trigger:
 - master
 
 variables:
-  serviceConnectionName: $[variables.ServiceConnectionName]
-  azureSubscriptionId: $[variables.AzureSubscriptionId]
+  serviceConnectionName: $ServiceConnectionName
+  azureSubscriptionId: $AzureSubscriptionId
   functionAppName: 'prodhellofunctions'
   resourceLocationName: 'West Europe'
   resourceGroupName: 'Target'
