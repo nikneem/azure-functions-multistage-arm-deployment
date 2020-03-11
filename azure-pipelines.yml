@@ -2,7 +2,6 @@ trigger:
 - master
 
 variables:
-  ServiceConnectionName: $(ServiceConnectionName)
   AzureSubscriptionId: $(AzureSubscriptionId)
   functionAppName: 'prodhellofunctions'
   resourceLocationName: 'West Europe'
@@ -102,7 +101,7 @@ stages:
           - task: AzureFunctionApp@1
             displayName: 'Azure functions app deploy'
             inputs:
-              azureSubscription: $(AzureSubscriptionId)
+              azureSubscription: $(ServiceConnectionName)
               appType: functionApp
               appName: $(functionAppName)
               package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
