@@ -2,6 +2,8 @@ trigger:
 - master
 
 variables:
+  ServiceConnectionName: 'Visual Studio Enterprise – MPN(d8edfd3f-489d-4db6-b048-9f6647b7b8fe)'
+  AzureSubscriptionId: 'd8edfd3f-489d-4db6-b048-9f6647b7b8fe'
   functionAppName: 'prodhellofunctions'
   resourceLocationName: 'West Europe'
   resourceGroupName: 'Target'
