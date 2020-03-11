@@ -2,12 +2,7 @@ trigger:
 - master
 
 variables:
-  azureSubscription: 'your-azure-subscription'
-  functionAppName: 'prodhellofunctions'
-  resourceLocationName: 'West Europe'
-  resourceGroupName: 'Target'
-  vmImageName: 'vs2017-win2016'
-  workingDirectory: '$(System.DefaultWorkingDirectory)/MyDemo.Functions'
+  - group: Production
 
 stages:
 - stage: Build
@@ -67,14 +62,18 @@ stages:
         deploy:
 
           steps:
-          - task: AzureResourceGroupDeployment@2
-            displayName: 'Create or update Azure Resources'
+          - task: AzureResourceManagerTemplateDeployment@3
             inputs:
-              azureSubscription: '$(azureSubscription)'
-              resourceGroupName: '$(resourceGroupName)'
-              location: '$(resourceLocationName)'
+              deploymentScope: 'Resource Group'
+              azureResourceManagerConnection: $(ServiceConnectionName)
+              subscriptionId: $(AzureSubscriptionId)
+              action: 'Create Or Update Resource Group'
+              resourceGroupName: 'Target'
+              location: 'West Europe'
+              templateLocation: 'Linked artifact'
               csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
               csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
+              deploymentMode: 'Complete'          
 
 
 - stage: Deploy
@@ -97,7 +96,8 @@ stages:
           - task: AzureFunctionApp@1
             displayName: 'Azure functions app deploy'
             inputs:
-              azureSubscription: '$(azureSubscription)'
+              azureSubscription: $(ServiceConnectionName)
               appType: functionApp
               appName: $(functionAppName)
               package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
+              deploymentMethod: 'auto'
