@@ -102,8 +102,8 @@ stages:
           - task: AzureFunctionApp@1
             displayName: 'Azure functions app deploy'
             inputs:
-              azureSubscription: $(ServiceConnectionName)
+              azureSubscription: $(AzureSubscriptionId)
               appType: functionApp
               appName: $(functionAppName)
               package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
-
+              deploymentMethod: 'auto'
