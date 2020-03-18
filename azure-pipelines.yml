@@ -2,7 +2,7 @@ trigger:
 - master
 
 variables:
-  - group: prod-variables
+  - group: Production
 
 stages:
 - stage: Build
