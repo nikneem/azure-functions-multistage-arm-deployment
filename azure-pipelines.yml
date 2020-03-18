@@ -26,7 +26,7 @@ stages:
       displayName: Build
       inputs:
         command: 'build'
-        projects: "[variables('workingDirectory')]\*.csproj"
+        projects: "[variables('workingDirectory')]\\*.csproj"
         arguments: --output $(System.DefaultWorkingDirectory)\publish_output --configuration Release
 
     - task: ArchiveFiles@2
