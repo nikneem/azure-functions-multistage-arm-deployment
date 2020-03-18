@@ -12,7 +12,7 @@ stages:
   - job: Build
     displayName: Build
     pool:
-      vmImage: $(vmImageName)
+      vmImage: "[variables('vmImageName')]"
 
     steps:
     - task: CopyFiles@2
@@ -26,8 +26,7 @@ stages:
       displayName: Build
       inputs:
         command: 'build'
-        projects: |
-          $(workingDirectory)\*.csproj
+        projects: "[variables('workingDirectory')]\*.csproj')]"
         arguments: --output $(System.DefaultWorkingDirectory)\publish_output --configuration Release
 
     - task: ArchiveFiles@2
@@ -65,11 +64,11 @@ stages:
           - task: AzureResourceManagerTemplateDeployment@3
             inputs:
               deploymentScope: 'Resource Group'
-              azureResourceManagerConnection: $(ServiceConnectionName)
+              azureResourceManagerConnection: "[variables('ServiceConnectionName')]"
               subscriptionId: $(AzureSubscriptionId)
               action: 'Create Or Update Resource Group'
-              resourceGroupName: 'Target'
-              location: 'West Europe'
+              resourceGroupName: "[variables('resourceGroupName')]"
+              location: "[variables('resourceLocationName')]"
               templateLocation: 'Linked artifact'
               csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
               csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
@@ -96,8 +95,8 @@ stages:
           - task: AzureFunctionApp@1
             displayName: 'Azure functions app deploy'
             inputs:
-              azureSubscription: $(ServiceConnectionName)
+              azureSubscription: "[variables('ServiceConnectionName')]"
               appType: functionApp
-              appName: $(functionAppName)
+              appName: "[variables('functionAppName')]"
               package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
               deploymentMethod: 'auto'
