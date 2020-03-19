@@ -12,7 +12,7 @@ stages:
   - job: Build
     displayName: Build
     pool:
-      vmImage: "[variables('vmImageName')]"
+      vmImage: $vmImageName
 
     steps:
     - task: CopyFiles@2
@@ -26,7 +26,7 @@ stages:
       displayName: Build
       inputs:
         command: 'build'
-        projects: "[variables('workingDirectory')]\\*.csproj"
+        projects: "$workingDirectory\\*.csproj"
         arguments: --output $(System.DefaultWorkingDirectory)\publish_output --configuration Release
 
     - task: ArchiveFiles@2
@@ -54,7 +54,7 @@ stages:
     displayName: Deploy ARM Templates
     environment: 'production'
     pool:
-      vmImage: $(vmImageName)
+      vmImage: $vmImageName
 
     strategy:
       runOnce:
@@ -64,11 +64,11 @@ stages:
           - task: AzureResourceManagerTemplateDeployment@3
             inputs:
               deploymentScope: 'Resource Group'
-              azureResourceManagerConnection: "[variables('ServiceConnectionName')]"
-              subscriptionId: $(AzureSubscriptionId)
+              azureResourceManagerConnection: $ServiceConnectionName
+              subscriptionId: $AzureSubscriptionId
               action: 'Create Or Update Resource Group'
-              resourceGroupName: "[variables('resourceGroupName')]"
-              location: "[variables('resourceLocationName')]"
+              resourceGroupName: $resourceGroupName
+              location: $resourceLocationName
               templateLocation: 'Linked artifact'
               csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
               csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
@@ -85,7 +85,7 @@ stages:
     displayName: Deploy
     environment: 'production'
     pool:
-      vmImage: $(vmImageName)
+      vmImage: $vmImageName
 
     strategy:
       runOnce:
@@ -95,8 +95,8 @@ stages:
           - task: AzureFunctionApp@1
             displayName: 'Azure functions app deploy'
             inputs:
-              azureSubscription: "[variables('ServiceConnectionName')]"
+              azureSubscription: $ServiceConnectionName
               appType: functionApp
-              appName: "[variables('functionAppName')]"
+              appName: $functionAppName
               package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
               deploymentMethod: 'auto'
