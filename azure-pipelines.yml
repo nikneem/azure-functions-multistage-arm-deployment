@@ -1,31 +1,24 @@
 trigger:
 - master
 
+variables:
+  - group: prod-variables
 
 stages:
 - stage: Build
   displayName: Build stage
 
   jobs:
-  - job: build_Virginia
-    variables:
-    - group: prod-variables
-    - name: job_name
-      value: 'Build us-east-1'
+  - job: VariablesTest
+    displayName: 'Show Variable Values'
     steps:
       - script: |
-          echo $(job_name)
           echo $SERVICECONNECTION
-        displayName: 'Show Variable Values'
-
 
   - job: Build
-    variables:
-      - group: prod-variables
     displayName: Build
     pool:
-      vmImage: $vmImageName
-
+      vmImage: $VMIMAGE
     steps:
     - task: CopyFiles@2
       displayName: 'Publish ARM templates'
@@ -55,3 +48,5 @@ stages:
 
     - publish: '$(Build.ArtifactStagingDirectory)\$(Build.BuildId).zip'
       artifact: drop
+
+
