@@ -56,8 +56,44 @@ stages:
     steps:
       - script: |
           echo '$(SERVICECONNECTION)'
-          echo '$SERVICECONNECTION'
-          echo '$(FUNCTIONAPPNAME)'
-          echo '$(SERVICECONNECTION)'
           echo '$(AZURESUBSCRIPTIONID)'
+          echo '$(RESOURCEGROUP)'
+          echo '$(RESOURCELOCATION)'
+          echo '$(FUNCTIONAPPNAME)'
 
+
+
+
+  - deployment: Deploy
+    displayName: Deploy
+    environment: 'production'
+    pool:
+      name: 'Azure Pipelines'
+      vmImage: 'windows-2019'
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: 'Deploy ARM Template'
+            inputs:
+              deploymentScope: 'Resource Group'
+              azureResourceManagerConnection: '$(SERVICECONNECTION)'
+              subscriptionId: '$(AZURESUBSCRIPTIONID)'
+              action: 'Create Or Update Resource Group'
+              resourceGroupName: '$(RESOURCEGROUP)' 
+              location: '$(RESOURCELOCATION)'
+              templateLocation: 'Linked artifact'
+              csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
+              csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
+              deploymentMode: 'Complete'     
+
+          - task: AzureFunctionApp@1
+            displayName: 'Deploy Functions APP'
+            inputs:
+              azureSubscription: '$(SERVICECONNECTION)'
+              appType: functionApp
+              appName: '$(FUNCTIONAPPNAME)'
+              package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
+              deploymentMethod: 'auto'
