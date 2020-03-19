@@ -66,8 +66,6 @@ stages:
 
 
   - deployment: Deploy
-    variables:
-      - group: prod-variables
     displayName: Deploy
     environment: 'production'
     pool:
@@ -79,20 +77,21 @@ stages:
         deploy:
           steps:
           - task: AzureResourceManagerTemplateDeployment@3
+            displayName: 'Deploy ARM Template'
             inputs:
               deploymentScope: 'Resource Group'
               azureResourceManagerConnection: 'AzureDeployment'
               subscriptionId: 'd8edfd3f-489d-4db6-b048-9f6647b7b8fe'
               action: 'Create Or Update Resource Group'
-              resourceGroupName: ${{ variables.RESOURCEGROUP }}
-              location: ${{ variables.RESOURCELOCATION }}
+              resourceGroupName: $RESOURCEGROUP
+              location: $RESOURCELOCATION
               templateLocation: 'Linked artifact'
               csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
               csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
               deploymentMode: 'Complete'     
 
           - task: AzureFunctionApp@1
-            displayName: 'Azure functions app deploy'
+            displayName: 'Deploy Functions APP'
             inputs:
               azureSubscription: 'AzureDeployment'
               appType: functionApp
