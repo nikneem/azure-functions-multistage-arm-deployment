@@ -84,8 +84,8 @@ stages:
               azureResourceManagerConnection: 'AzureDeployment'
               subscriptionId: 'd8edfd3f-489d-4db6-b048-9f6647b7b8fe'
               action: 'Create Or Update Resource Group'
-              resourceGroupName: ${{ RESOURCEGROUP }}
-              location: ${{ RESOURCELOCATION }}
+              resourceGroupName: ${{ variables.RESOURCEGROUP }}
+              location: ${{ variables.RESOURCELOCATION }}
               templateLocation: 'Linked artifact'
               csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
               csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
