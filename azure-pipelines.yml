@@ -11,12 +11,6 @@ stages:
   displayName: Build stage
 
   jobs:
-  - job: VariablesTest
-    displayName: 'Show Variable Values'
-    steps:
-      - script: |
-          echo $SERVICECONNECTION
-
   - job: Build
     displayName: Build
     pool:
@@ -31,7 +25,7 @@ stages:
         TargetFolder: '$(Build.ArtifactStagingDirectory)\deployments'
 
     - task: DotNetCoreCLI@2
-      displayName: Build
+      displayName: 'Build Functions APP'
       inputs:
         command: 'build'
         projects: '$(System.DefaultWorkingDirectory)/MyDemo.Functions/*.csproj'
@@ -61,7 +55,7 @@ stages:
     displayName: 'Show Variable Values'
     steps:
       - script: |
-          echo $SERVICECONNECTION
+          echo '${{ variables.SERVICECONNECTION }}'
 
 
 
@@ -83,7 +77,7 @@ stages:
               azureResourceManagerConnection: 'AzureDeployment'
               subscriptionId: 'd8edfd3f-489d-4db6-b048-9f6647b7b8fe'
               action: 'Create Or Update Resource Group'
-              resourceGroupName: $RESOURCEGROUP
+              resourceGroupName: '${{ variables.RESOURCEGROUP }}'
               location: $RESOURCELOCATION
               templateLocation: 'Linked artifact'
               csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
