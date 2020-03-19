@@ -3,6 +3,8 @@ trigger:
 
 variables:
   - group: prod-variables
+  - name: DOTNET_SKIP_FIRST_TIME_EXPERIENCE
+    value: true
 
 stages:
 - stage: Build
@@ -49,4 +51,38 @@ stages:
 
     - publish: '$(Build.ArtifactStagingDirectory)\$(Build.BuildId).zip'
       artifact: drop
+
+
+- stage: Deploy
+  displayName: Deploy stage
+  dependsOn: ArmResources
+  condition: succeeded()
+
+  jobs:
+  - deployment: Deploy
+    variables:
+      - group: prod-variables
+    displayName: Deploy
+    environment: 'production'
+    pool:
+      name: 'Azure Pipelines'
+      vmImage: 'windows-2019'
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureResourceManagerTemplateDeployment@3
+            inputs:
+              deploymentScope: 'Resource Group'
+              azureResourceManagerConnection: $SERVICECONNECTION
+              subscriptionId: $AzureSubscriptionId
+              action: 'Create Or Update Resource Group'
+              resourceGroupName: $RESOURCEGROUP
+              location: $RESOURCELOCATION
+              templateLocation: 'Linked artifact'
+              csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
+              csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
+              deploymentMode: 'Complete'     
+
 
