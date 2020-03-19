@@ -18,7 +18,7 @@ stages:
   - job: Build
     displayName: Build
     pool:
-      vmImage: $VMIMAGE
+      vmImage: '$VMIMAGE'
     steps:
     - task: CopyFiles@2
       displayName: 'Publish ARM templates'
@@ -48,5 +48,3 @@ stages:
 
     - publish: '$(Build.ArtifactStagingDirectory)\$(Build.BuildId).zip'
       artifact: drop
-
-
