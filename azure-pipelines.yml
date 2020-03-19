@@ -41,29 +41,17 @@ stages:
         replaceExistingArchive: true
 
     - publish: '$(Build.ArtifactStagingDirectory)\deployments'
+      displayName: 'Publish ARM Templates'
       artifact: deployments
 
     - publish: '$(Build.ArtifactStagingDirectory)\$(Build.BuildId).zip'
+      displayName: 'Publish Functions APP'
       artifact: drop
 
 
 - stage: Deploy
   displayName: Deploy stage
-
   jobs:
-  - job: VariablesTest
-    displayName: 'Show Variable Values'
-    steps:
-      - script: |
-          echo '$(SERVICECONNECTION)'
-          echo '$(AZURESUBSCRIPTIONID)'
-          echo '$(RESOURCEGROUP)'
-          echo '$(RESOURCELOCATION)'
-          echo '$(FUNCTIONAPPNAME)'
-
-
-
-
   - deployment: Deploy
     displayName: Deploy
     environment: 'production'
@@ -76,7 +64,7 @@ stages:
         deploy:
           steps:
           - task: AzureResourceManagerTemplateDeployment@3
-            displayName: 'Deploy ARM Template'
+            displayName: 'Deploy ARM Template Incremental'
             inputs:
               deploymentScope: 'Resource Group'
               azureResourceManagerConnection: '$(SERVICECONNECTION)'
@@ -87,7 +75,7 @@ stages:
               templateLocation: 'Linked artifact'
               csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
               csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
-              deploymentMode: 'Complete'     
+              deploymentMode: 'Incremental'
 
           - task: AzureFunctionApp@1
             displayName: 'Deploy Functions APP'
@@ -97,3 +85,18 @@ stages:
               appName: '$(FUNCTIONAPPNAME)'
               package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
               deploymentMethod: 'auto'
+
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: 'Deploy ARM Template Complete'
+            inputs:
+              deploymentScope: 'Resource Group'
+              azureResourceManagerConnection: '$(SERVICECONNECTION)'
+              subscriptionId: '$(AZURESUBSCRIPTIONID)'
+              action: 'Create Or Update Resource Group'
+              resourceGroupName: '$(RESOURCEGROUP)' 
+              location: '$(RESOURCELOCATION)'
+              templateLocation: 'Linked artifact'
+              csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
+              csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
+              deploymentMode: 'Complete'
+  
