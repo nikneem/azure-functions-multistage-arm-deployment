@@ -32,7 +32,7 @@ stages:
       displayName: Build
       inputs:
         command: 'build'
-        projects: "$workingDirectory\\*.csproj"
+        projects: '$(System.DefaultWorkingDirectory)/MyDemo.Functions/*.csproj'
         arguments: --output $(System.DefaultWorkingDirectory)\publish_output --configuration Release
 
     - task: ArchiveFiles@2
@@ -49,5 +49,4 @@ stages:
 
     - publish: '$(Build.ArtifactStagingDirectory)\$(Build.BuildId).zip'
       artifact: drop
-
 
