@@ -18,7 +18,8 @@ stages:
   - job: Build
     displayName: Build
     pool:
-      vmImage: '$VMIMAGE'
+      name: 'Azure Pipelines'
+      vmImage: 'windows-2019'
     steps:
     - task: CopyFiles@2
       displayName: 'Publish ARM templates'
@@ -48,3 +49,45 @@ stages:
 
     - publish: '$(Build.ArtifactStagingDirectory)\$(Build.BuildId).zip'
       artifact: drop
+
+
+- stage: Deploy
+  displayName: Deploy stage
+  dependsOn: ArmResources
+  condition: succeeded()
+
+  jobs:
+  - deployment: Deploy
+    variables:
+      - group: prod-variables
+    displayName: Deploy
+    environment: 'production'
+    pool:
+      name: 'Azure Pipelines'
+      vmImage: 'windows-2019'
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureResourceManagerTemplateDeployment@3
+            inputs:
+              deploymentScope: 'Resource Group'
+              azureResourceManagerConnection: $SERVICECONNECTION
+              subscriptionId: $AzureSubscriptionId
+              action: 'Create Or Update Resource Group'
+              resourceGroupName: $resourceGroupName
+              location: $resourceLocationName
+              templateLocation: 'Linked artifact'
+              csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
+              csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
+              deploymentMode: 'Complete'     
+
+          - task: AzureFunctionApp@1
+            displayName: 'Azure functions app deploy'
+            inputs:
+              azureSubscription: $SERVICECONNECTION
+              appType: functionApp
+              appName: $functionAppName
+              package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
+              deploymentMethod: 'auto'
