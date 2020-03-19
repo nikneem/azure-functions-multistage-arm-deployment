@@ -73,8 +73,8 @@ stages:
           - task: AzureResourceManagerTemplateDeployment@3
             inputs:
               deploymentScope: 'Resource Group'
-              azureResourceManagerConnection: $SERVICECONNECTION
-              subscriptionId: $AzureSubscriptionId
+              azureResourceManagerConnection: 'AzureDeployment'
+              subscriptionId: 'd8edfd3f-489d-4db6-b048-9f6647b7b8fe'
               action: 'Create Or Update Resource Group'
               resourceGroupName: $RESOURCEGROUP
               location: $RESOURCELOCATION
@@ -82,3 +82,12 @@ stages:
               csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
               csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
               deploymentMode: 'Complete'     
+
+          - task: AzureFunctionApp@1
+            displayName: 'Azure functions app deploy'
+            inputs:
+              azureSubscription: 'AzureDeployment'
+              appType: functionApp
+              appName: $functionAppName
+              package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
+              deploymentMethod: 'auto'
