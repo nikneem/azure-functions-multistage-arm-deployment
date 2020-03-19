@@ -7,6 +7,18 @@ stages:
   displayName: Build stage
 
   jobs:
+  - job: build_Virginia
+    variables:
+    - group: prod-variables
+    - name: job_name
+      value: 'Build us-east-1'
+    steps:
+      - script: |
+          echo $(job_name)
+          echo $SERVICECONNECTION
+        displayName: 'Show Variable Values'
+
+
   - job: Build
     variables:
       - group: prod-variables
@@ -43,44 +55,3 @@ stages:
 
     - publish: '$(Build.ArtifactStagingDirectory)\$(Build.BuildId).zip'
       artifact: drop
-
-
-- stage: Deploy
-  displayName: Deploy stage
-  dependsOn: ArmResources
-  condition: succeeded()
-
-  jobs:
-  - deployment: Deploy
-    variables:
-      - group: prod-variables
-    displayName: Deploy
-    environment: 'production'
-    pool:
-      vmImage: $vmImageName
-
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: AzureResourceManagerTemplateDeployment@3
-            inputs:
-              deploymentScope: 'Resource Group'
-              azureResourceManagerConnection: $SERVICECONNECTION
-              subscriptionId: $AzureSubscriptionId
-              action: 'Create Or Update Resource Group'
-              resourceGroupName: $resourceGroupName
-              location: $resourceLocationName
-              templateLocation: 'Linked artifact'
-              csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
-              csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
-              deploymentMode: 'Complete'     
-
-          - task: AzureFunctionApp@1
-            displayName: 'Azure functions app deploy'
-            inputs:
-              azureSubscription: $SERVICECONNECTION
-              appType: functionApp
-              appName: $functionAppName
-              package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
-              deploymentMethod: 'auto'
