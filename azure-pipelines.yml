@@ -55,8 +55,6 @@ stages:
 
 - stage: Deploy
   displayName: Deploy stage
-  dependsOn: ArmResources
-  condition: succeeded()
 
   jobs:
   - deployment: Deploy
@@ -84,5 +82,3 @@ stages:
               csmFile: '$(Pipeline.Workspace)\deployments\azuredeploy.json'
               csmParametersFile: '$(Pipeline.Workspace)\deployments\azuredeploy.parameters.json'
               deploymentMode: 'Complete'     
-
-
